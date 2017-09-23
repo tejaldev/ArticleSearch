@@ -4,28 +4,20 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.app.NavUtils;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.WebView;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
 
 import com.ny.search.article.adapters.ArticlesAdapter;
-import com.ny.search.article.browser.ContentWebViewClient;
-import com.ny.search.article.listeners.EndlessRecyclerViewScrollListener;
+import com.ny.search.article.browser.ContentWebViewFragment;
 import com.ny.search.article.models.Article;
 import com.ny.search.article.models.Filter;
 import com.ny.search.article.network.ArticleAPI;
@@ -34,13 +26,11 @@ import com.ny.search.article.storage.FilterSettingsStorage;
 import com.ny.search.article.utils.ArticleResponseParser;
 import com.ny.search.article.views.CustomSearchView;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 
 import okhttp3.Call;
