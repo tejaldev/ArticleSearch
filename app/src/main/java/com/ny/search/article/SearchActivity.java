@@ -1,7 +1,9 @@
 package com.ny.search.article;
 
 import android.content.Context;
+import android.graphics.Movie;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
@@ -18,6 +20,7 @@ import android.view.View;
 
 import com.ny.search.article.adapters.ArticlesAdapter;
 import com.ny.search.article.browser.ContentWebViewFragment;
+import com.ny.search.article.listeners.EndlessRecyclerViewScrollListener;
 import com.ny.search.article.models.Article;
 import com.ny.search.article.models.Filter;
 import com.ny.search.article.network.ArticleAPI;
@@ -42,6 +45,8 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
     public static String TAG = SearchActivity.class.getSimpleName();
     public static String FILTER_DIALOG_TAG = "FILTER_DIALOG";
 
+    private Handler handler;
+    private String searchQuery;
     private RecyclerView searchRecyclerView;
     private ArticlesAdapter articlesAdapter;
     private OkHttpClient clientInstance;
@@ -49,16 +54,27 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_article_search);
+        setContentView(R.layout.activity_search);
         Toolbar toolbar = (Toolbar) findViewById(R.id.search_toolbar);
         setSupportActionBar(toolbar);
 
+        final Context context = this;
+        handler = new Handler();
         clientInstance = new OkHttpClient();
         searchRecyclerView = (RecyclerView) findViewById(R.id.search_recycler_view);
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL);
         searchRecyclerView.setLayoutManager(layoutManager);
-    }
 
+        EndlessRecyclerViewScrollListener scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+                // triggers when new data needs to be appended
+                makeDelayedNextPageRequests(context, page);
+            }
+        };
+        // Adds the scroll listener to RecyclerView
+        searchRecyclerView.addOnScrollListener(scrollListener);
+    }
 
 
     @Override
@@ -78,7 +94,8 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
 
                 // workaround to avoid issues with some emulators and keyboard devices firing twice if a keyboard enter is used
                 // see https://code.google.com/p/android/issues/detail?id=24599
-                searchArticle(context, query);
+                //searchArticle(context, query);
+                makeDelayedSearchRequests(context, query);
                 searchView.clearFocus();
                 return false;
             }
@@ -94,7 +111,6 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
                 new MenuItemCompat.OnActionExpandListener() {
                     @Override
                     public boolean onMenuItemActionCollapse(MenuItem item) {
-                        searchArticle(context, searchView.getSearchQuery());
                         return true; // Return true to collapse action view
                     }
 
@@ -133,6 +149,38 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         transaction.commit();
     }
 
+    public void loadArticlesSearchResultNextPage(Context context, int nextPage) {
+        HashMap<String, String> params = loadSettingsFromSharedPreference(context);
+        if (params == null) {
+            params = new HashMap<>();
+        }
+        params.put("page", String.valueOf(nextPage));
+        Log.e(TAG, "NextPage: " + nextPage);
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            params.put("q", searchQuery);
+        }
+
+        clientInstance.newCall(ArticleAPI.buildRequestWithQueryParams(ArticleAPI.BASE_URL, params))
+                .enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        Log.e(TAG, "Article next page search failed: " + e.getMessage());
+                    }
+
+                    @Override
+                    public void onResponse(Call call, final Response response) throws IOException {
+                        if (!response.isSuccessful()) {
+                            throw new IOException("Unexpected code " + response);
+                        }
+                        try {
+                            insertNewPageData(ArticleResponseParser.parseArticleInfoFromJson(new JSONObject(response.body().string())));
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing JSON: " + e.getMessage());
+                        }
+                    }
+                });
+    }
+
     private HashMap<String, String> loadSettingsFromSharedPreference(Context context) {
         HashMap<String, String> params = null;
         Filter filter = FilterSettingsStorage.getInstance(context).retrieveFilter();
@@ -146,10 +194,12 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
     }
 
     private void searchArticle(Context context, String lookupString) {
+        searchQuery = lookupString;
         HashMap<String, String> params = loadSettingsFromSharedPreference(context);
         if (params == null) {
             params = new HashMap<>();
         }
+        params.put("page", "0");
         if (lookupString != null && !lookupString.isEmpty()) {
             params.put("q", lookupString);
         }
@@ -180,9 +230,43 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
                 });
     }
 
+    private void makeDelayedSearchRequests(final Context context, final String searchQuery) {
+        Runnable runnableCode = new Runnable() {
+            @Override
+            public void run() {
+                // runs below code on main thread
+                searchArticle(context, searchQuery);
+            }
+        };
+        handler.postDelayed(runnableCode, 2000);
+    }
+
+    private void makeDelayedNextPageRequests(final Context context, final int page) {
+        Runnable runnableCode = new Runnable() {
+            @Override
+            public void run() {
+                // runs below code on main thread
+                loadArticlesSearchResultNextPage(context, page);
+                Log.d("Handlers", "Called on main thread");
+            }
+        };
+        // Run the above code block on the main thread after 2 seconds
+        handler.postDelayed(runnableCode, 2000);
+    }
+
     private void setupAdapter(ArrayList<Article> articles) {
         articlesAdapter = new ArticlesAdapter(articles, this);
         searchRecyclerView.setAdapter(articlesAdapter);
+    }
+
+    private void insertNewPageData(final ArrayList<Article> articles) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                articlesAdapter.setMoreData(articles);
+                articlesAdapter.notifyDataSetChanged();
+            }
+        });
     }
 
     private void showSettingsDialog() {

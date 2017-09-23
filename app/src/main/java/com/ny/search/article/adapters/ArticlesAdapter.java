@@ -1,5 +1,6 @@
 package com.ny.search.article.adapters;
 
+import android.graphics.Movie;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,6 +41,11 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.Articl
     @Override
     public int getItemCount() {
         return articleList.size();
+    }
+
+    public void setMoreData(List<Article> moreItemList) {
+        articleList.addAll(moreItemList);
+        this.notifyItemInserted(moreItemList.size());
     }
 
     @Override
