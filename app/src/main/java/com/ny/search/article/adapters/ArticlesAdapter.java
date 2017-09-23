@@ -1,6 +1,5 @@
 package com.ny.search.article.adapters;
 
-import android.graphics.Movie;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,7 +19,9 @@ import java.util.List;
  *
  * @author tejalpar
  */
-public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ArticleViewHolder> {
+public class ArticlesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final int TEXT_ONLY_VIEW_TYPE = 0; // articles that contains only text
+    private static final int THUMBNAIL_VIEW_TYPE = 1; // articles that contains thumbnail images
 
     private List<Article> articleList;
     private ArticleItemClickListener itemClickListener;
@@ -34,13 +35,17 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.Articl
         this.itemClickListener = itemClickListener;
     }
 
-    public Article getItemAtPosition(int position) {
-        return articleList.get(position);
-    }
-
     @Override
     public int getItemCount() {
         return articleList.size();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (articleList.get(position).hasImage()) {
+            return THUMBNAIL_VIEW_TYPE;
+        }
+        return TEXT_ONLY_VIEW_TYPE;
     }
 
     public void setMoreData(List<Article> moreItemList) {
@@ -49,40 +54,52 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.Articl
     }
 
     @Override
-    public ArticleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.article_row_layout, parent, false);
-        return new ArticleViewHolder(view);
+        RecyclerView.ViewHolder viewHolder;
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+
+        switch (viewType) {
+            case THUMBNAIL_VIEW_TYPE:
+                View popularView = inflater.inflate(R.layout.image_article_row_layout, parent, false);
+
+                //create view holder from above view
+                viewHolder = new ImageArticleViewHolder(popularView);
+                break;
+
+            case TEXT_ONLY_VIEW_TYPE:
+                default:
+                    View textOnlyView = inflater.inflate(R.layout.text_only_article_row_layout, parent, false);
+
+                    //create view holder from above view
+                    viewHolder = new TextOnlyViewHolder(textOnlyView);
+                break;
+        }
+        return viewHolder;
     }
 
     @Override
-    public void onBindViewHolder(ArticleViewHolder holder, final int position) {
-        holder.articleTitleText.setText(articleList.get(position).headline);
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
 
-        String imageUrl = null;
-        if (articleList.get(position).thumbnailUrl != null) {
-            imageUrl = articleList.get(position).thumbnailUrl;
-        } else if (articleList.get(position).wideUrl != null) {
-            imageUrl = articleList.get(position).wideUrl;
-        } else if (articleList.get(position).xlargeUrl != null) {
-            imageUrl = articleList.get(position).xlargeUrl;
-        }
+        switch (getItemViewType(position)) {
+            case THUMBNAIL_VIEW_TYPE:
+                ImageArticleViewHolder imageArticleViewHolder = (ImageArticleViewHolder) holder;
+                setUpImageArticleViewHolder(imageArticleViewHolder, position);
+                break;
 
-        if (imageUrl != null) {
-            Picasso.with(holder.itemView.getContext())
-                    .load(Article.getAbsoluteMoviePath(imageUrl))
-                    .placeholder(R.drawable.placeholder_image)
-                    .into(holder.articleImageView);
-        } else {
-            holder.articleImageView.setImageResource(R.drawable.placeholder_image);
+            case TEXT_ONLY_VIEW_TYPE:
+            default:
+                TextOnlyViewHolder textOnlyViewHolder = (TextOnlyViewHolder) holder;
+                textOnlyViewHolder.articleTitleText.setText(articleList.get(position).headline);
+                break;
         }
     }
 
-    public class ArticleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class ImageArticleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView articleTitleText;
         public ImageView articleImageView;
 
-        public ArticleViewHolder(View rootView) {
+        public ImageArticleViewHolder(View rootView) {
             super(rootView);
 
             rootView.setOnClickListener(this);
@@ -94,5 +111,45 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.Articl
         public void onClick(View view) {
             itemClickListener.onArticleItemClickListener(view, articleList.get(getAdapterPosition()));
         }
+    }
+
+    public class TextOnlyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        public TextView articleTitleText;
+
+        public TextOnlyViewHolder(View rootView) {
+            super(rootView);
+
+            rootView.setOnClickListener(this);
+            articleTitleText = (TextView) rootView.findViewById(R.id.search_result_title);
+        }
+
+        @Override
+        public void onClick(View view) {
+            itemClickListener.onArticleItemClickListener(view, articleList.get(getAdapterPosition()));
+        }
+    }
+
+    private void setUpImageArticleViewHolder(ImageArticleViewHolder holder, int position) {
+        Article article = articleList.get(position);
+
+        String imageUrl = null;
+        if (article.thumbnailUrl != null) {
+            imageUrl = article.thumbnailUrl;
+        } else if (article.wideUrl != null) {
+            imageUrl = article.wideUrl;
+        } else if (article.xlargeUrl != null) {
+            imageUrl = article.xlargeUrl;
+        }
+
+        if (imageUrl != null) {
+            Picasso.with(holder.itemView.getContext())
+                    .load(Article.getAbsoluteMoviePath(imageUrl))
+                    .placeholder(R.drawable.placeholder_image)
+                    .into(holder.articleImageView);
+        } else {
+            holder.articleImageView.setImageResource(R.drawable.placeholder_image);
+        }
+
+        holder.articleTitleText.setText(article.headline);
     }
 }

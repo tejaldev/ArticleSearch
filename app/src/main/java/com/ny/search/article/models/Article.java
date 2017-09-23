@@ -32,6 +32,17 @@ public class Article implements Parcelable {
         return BASE_IMAGE_PATH + relativePath;
     }
 
+    public boolean hasImage() {
+        if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
+            return true;
+        } else if (wideUrl != null && !wideUrl.isEmpty()) {
+            return true;
+        } else if (xlargeUrl != null && !xlargeUrl.isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public int describeContents() {
         return 0;
