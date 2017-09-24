@@ -168,6 +168,8 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
             @Override
             public void run() {
                 // runs below code on main thread
+
+                // reset state before starting a new search
                 resetBeforeSearch();
 
                 recentSearchQuery = searchQuery;
@@ -200,11 +202,14 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                articlesAdapter = new ArticlesAdapter(articles, listener);
-                searchRecyclerView.setAdapter(articlesAdapter);
-                articlesAdapter.notifyDataSetChanged();
-                searchRecyclerView.invalidate();
-                searchRecyclerView.requestLayout();
+                if (articlesAdapter != null) {
+                    // adapter change
+                    articlesAdapter.setNewItems(articles);
+                    articlesAdapter.notifyDataSetChanged();
+                } else {
+                    articlesAdapter = new ArticlesAdapter(articles, listener);
+                    searchRecyclerView.setAdapter(articlesAdapter);
+                }
             }
         });
     }
@@ -227,7 +232,5 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
     private void resetBeforeSearch() {
         recentSearchQuery = null;
         scrollListener.resetState();
-        searchRecyclerView.setAdapter(null);
-        articlesAdapter = null;
     }
 }

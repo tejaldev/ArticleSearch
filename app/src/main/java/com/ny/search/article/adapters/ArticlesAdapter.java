@@ -49,6 +49,12 @@ public class ArticlesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         return TEXT_ONLY_VIEW_TYPE;
     }
 
+    public void setNewItems(List<Article> newItems) {
+        articleList.clear();
+        articleList.addAll(newItems);
+        this.notifyItemRangeChanged(0, newItems.size());
+    }
+
     public void setMoreData(List<Article> moreItemList) {
         articleList.addAll(moreItemList);
         this.notifyItemInserted(moreItemList.size());
