@@ -3,12 +3,12 @@ package com.ny.search.article.utils;
 import android.util.Log;
 
 import com.ny.search.article.models.Article;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.ny.search.article.network.response.models.Doc;
+import com.ny.search.article.network.response.models.Multimedium;
+import com.ny.search.article.network.response.models.Response;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author tejalpar
@@ -16,57 +16,45 @@ import java.util.ArrayList;
 public class ArticleResponseParser {
     public static String TAG = ArticleResponseParser.class.getSimpleName();
 
-    public static ArrayList<Article> parseArticleInfoFromJson(JSONObject response) {
+    public static ArrayList<Article> parseArticleInfoFromResponseObject(Response response) {
         ArrayList<Article> articleList = new ArrayList<>();
         try {
-            JSONObject resObject = response.getJSONObject("response");
-            JSONArray resultsJson = resObject.getJSONArray("docs");
+            List<Doc> docs = response.getResponse().getDocs();
 
-            for (int i = 0; i < resultsJson.length(); i++) {
+            for (int i = 0; i < docs.size(); i++) {
+
                 Article article = new Article();
-                JSONObject item = resultsJson.getJSONObject(i);
+                article.snippet = docs.get(i).getSnippet();
+                article.webUrl = docs.get(i).getWebUrl();
+                article.articleId = docs.get(i).getId();
+                article.newDesk = docs.get(i).getNewDesk();
 
-                article.snippet = item.optString("snippet");
-                article.webUrl = item.optString("web_url");
-                article.articleId = item.optString("_id");
-                article.newDesk = item.optString("new_desk");
+                if (docs.get(i).getHeadline() != null) {
+                    article.headline = docs.get(i).getHeadline().getMain();
+                }
 
-                JSONObject headlineObj = item.getJSONObject("headline");
-                article.headline = headlineObj.optString("main");
+                List<Multimedium> multimediaList = docs.get(i).getMultimedia();
+                if (multimediaList != null) {
+                    for (int j = 0; j < multimediaList.size(); j++) {
 
-                JSONArray multimediaList = item.getJSONArray("multimedia");
-                for (int j = 0; j < multimediaList.length(); j++) {
-                    JSONObject media = multimediaList.getJSONObject(j);
+                        if (multimediaList.get(j).getSubtype().equals("wide")) {
+                            article.wideUrl = multimediaList.get(j).getUrl();
 
-                    if (media.optString("subtype").equals("wide")) {
-                        article.wideUrl = media.optString("url", "");
+                        }
+                        if (multimediaList.get(j).getSubtype().equals("xlarge")) {
+                            article.xlargeUrl = multimediaList.get(j).getUrl();
 
-                    }
-                    if (media.optString("subtype").equals("xlarge")) {
-                        article.xlargeUrl = media.optString("url", "");
-
-                    }
-                    if (media.optString("subtype").equals("thumbnail")) {
-                        article.thumbnailUrl = media.optString("url", "");
+                        }
+                        if (multimediaList.get(j).getSubtype().equals("thumbnail")) {
+                            article.thumbnailUrl = multimediaList.get(j).getUrl();
+                        }
                     }
                 }
                 articleList.add(article);
             }
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing article info from json: " + e.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing article response from object: " + e.getMessage());
         }
         return articleList;
-    }
-
-    public static int parseOffsetInfo(JSONObject response) {
-        try {
-            JSONObject resObject = response.getJSONObject("response");
-            JSONObject metaObject = resObject.getJSONObject("meta");
-
-            return metaObject.optInt("offset");
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing article info from json: " + e.getMessage());
-        }
-        return -1;
     }
 }

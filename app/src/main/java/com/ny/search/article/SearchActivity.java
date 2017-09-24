@@ -1,7 +1,6 @@
 package com.ny.search.article;
 
 import android.content.Context;
-import android.graphics.Movie;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentManager;
@@ -17,39 +16,32 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.ny.search.article.adapters.ArticlesAdapter;
 import com.ny.search.article.browser.ContentWebViewFragment;
 import com.ny.search.article.listeners.EndlessRecyclerViewScrollListener;
 import com.ny.search.article.models.Article;
 import com.ny.search.article.models.Filter;
-import com.ny.search.article.network.ArticleAPI;
+import com.ny.search.article.network.response.models.Response;
+import com.ny.search.article.network.RetrofitArticleAPI;
 import com.ny.search.article.settings.SettingsDialogFragment;
 import com.ny.search.article.storage.FilterSettingsStorage;
 import com.ny.search.article.utils.ArticleResponseParser;
 import com.ny.search.article.views.CustomSearchView;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-
-public class SearchActivity extends AppCompatActivity implements ArticlesAdapter.ArticleItemClickListener {
+public class SearchActivity extends AppCompatActivity implements ArticlesAdapter.ArticleItemClickListener, RetrofitArticleAPI.OnResultListener {
     public static String TAG = SearchActivity.class.getSimpleName();
     public static String FILTER_DIALOG_TAG = "FILTER_DIALOG";
 
     private Handler handler;
-    private String searchQuery;
+    private RetrofitArticleAPI retrofitArticleAPI;
+    private String recentSearchQuery;
     private RecyclerView searchRecyclerView;
     private ArticlesAdapter articlesAdapter;
-    private OkHttpClient clientInstance;
+    private EndlessRecyclerViewScrollListener scrollListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,13 +51,14 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         setSupportActionBar(toolbar);
 
         final Context context = this;
+
         handler = new Handler();
-        clientInstance = new OkHttpClient();
+        retrofitArticleAPI = new RetrofitArticleAPI(this);
         searchRecyclerView = (RecyclerView) findViewById(R.id.search_recycler_view);
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL);
         searchRecyclerView.setLayoutManager(layoutManager);
 
-        EndlessRecyclerViewScrollListener scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
+        scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
                 // triggers when new data needs to be appended
@@ -90,11 +83,9 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // perform query here
 
                 // workaround to avoid issues with some emulators and keyboard devices firing twice if a keyboard enter is used
                 // see https://code.google.com/p/android/issues/detail?id=24599
-                //searchArticle(context, query);
                 makeDelayedSearchRequests(context, query);
                 searchView.clearFocus();
                 return false;
@@ -107,19 +98,6 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
             }
         });
 
-        MenuItemCompat.setOnActionExpandListener(searchItem,
-                new MenuItemCompat.OnActionExpandListener() {
-                    @Override
-                    public boolean onMenuItemActionCollapse(MenuItem item) {
-                        return true; // Return true to collapse action view
-                    }
-
-                    @Override
-                    public boolean onMenuItemActionExpand(MenuItem item) {
-                        // Do something when expanded
-                        return true; // Return true to expand action view
-                    }
-                });
         return true;
     }
 
@@ -149,85 +127,40 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         transaction.commit();
     }
 
-    public void loadArticlesSearchResultNextPage(Context context, int nextPage) {
-        HashMap<String, String> params = loadSettingsFromSharedPreference(context);
-        if (params == null) {
-            params = new HashMap<>();
+    @Override
+    public void OnSearchResponse(retrofit2.Call<Response> call, retrofit2.Response<Response> response) {
+        if (!response.isSuccessful()) {
+            Toast.makeText(getBaseContext(), "Search request failed.", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Search request failed with error code: " + response.isSuccessful());
         }
-        params.put("page", String.valueOf(nextPage));
-        Log.e(TAG, "NextPage: " + nextPage);
-        if (searchQuery != null && !searchQuery.isEmpty()) {
-            params.put("q", searchQuery);
+        try {
+            final ArrayList<Article> articles = ArticleResponseParser.parseArticleInfoFromResponseObject(response.body());
+            setupAdapter(articles);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing search response: " + e.getMessage());
         }
-
-        clientInstance.newCall(ArticleAPI.buildRequestWithQueryParams(ArticleAPI.BASE_URL, params))
-                .enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        Log.e(TAG, "Article next page search failed: " + e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(Call call, final Response response) throws IOException {
-                        if (!response.isSuccessful()) {
-                            throw new IOException("Unexpected code " + response);
-                        }
-                        try {
-                            insertNewPageData(ArticleResponseParser.parseArticleInfoFromJson(new JSONObject(response.body().string())));
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Error parsing JSON: " + e.getMessage());
-                        }
-                    }
-                });
     }
 
-    private HashMap<String, String> loadSettingsFromSharedPreference(Context context) {
-        HashMap<String, String> params = null;
-        Filter filter = FilterSettingsStorage.getInstance(context).retrieveFilter();
-        if (filter.isFilterSet()) {
-            params = new HashMap<>();
-            params.put("begin_date", filter.getFormattedDate());
-            params.put("sort", filter.getSortOrder());
-            params.put("fq", ArticleAPI.buildNewsDeskQueryParam(filter.getNewsDeskMap()));
+    @Override
+    public void OnNextPageResponse(retrofit2.Call<Response> call, retrofit2.Response<Response> response) {
+
+        if (!response.isSuccessful()) {
+            Toast.makeText(getBaseContext(), "Next page request failed.", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Search request failed with error code: " + response.isSuccessful());
         }
-        return params;
+
+        try {
+            insertNewPageData(ArticleResponseParser.parseArticleInfoFromResponseObject(response.body()));
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing next page fetch response: " + e.getMessage());
+        }
     }
 
-    private void searchArticle(Context context, String lookupString) {
-        searchQuery = lookupString;
-        HashMap<String, String> params = loadSettingsFromSharedPreference(context);
-        if (params == null) {
-            params = new HashMap<>();
-        }
-        params.put("page", "0");
-        if (lookupString != null && !lookupString.isEmpty()) {
-            params.put("q", lookupString);
-        }
-        clientInstance.newCall(ArticleAPI.buildRequestWithQueryParams(ArticleAPI.BASE_URL, params))
-                .enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        Log.e(TAG, "Article search failed: " + e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(Call call, final Response response) throws IOException {
-                        if (!response.isSuccessful()) {
-                            throw new IOException("Unexpected code " + response);
-                        }
-                        try {
-                            final ArrayList<Article> articles = ArticleResponseParser.parseArticleInfoFromJson(new JSONObject(response.body().string()));
-                            SearchActivity.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    setupAdapter(articles);
-                                }
-                            });
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Error parsing JSON: " + e.getMessage());
-                        }
-                    }
-                });
+    @Override
+    public void onFailure(retrofit2.Call<Response> call, Throwable t) {
+        Toast.makeText(getBaseContext(), "Rest request failed.", Toast.LENGTH_LONG).show();
+        Log.e(TAG, "Article search failed: " + t.getMessage());
     }
 
     private void makeDelayedSearchRequests(final Context context, final String searchQuery) {
@@ -235,7 +168,11 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
             @Override
             public void run() {
                 // runs below code on main thread
-                searchArticle(context, searchQuery);
+                resetBeforeSearch();
+
+                recentSearchQuery = searchQuery;
+                Filter filter = loadFilterFromSharedPreference(context);
+                retrofitArticleAPI.searchArticle(filter, searchQuery);
             }
         };
         handler.postDelayed(runnableCode, 2000);
@@ -246,17 +183,30 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
             @Override
             public void run() {
                 // runs below code on main thread
-                loadArticlesSearchResultNextPage(context, page);
-                Log.d("Handlers", "Called on main thread");
+                Filter filter = loadFilterFromSharedPreference(context);
+                retrofitArticleAPI.fetchSearchNextPage(filter, recentSearchQuery, page);
             }
         };
         // Run the above code block on the main thread after 2 seconds
         handler.postDelayed(runnableCode, 2000);
     }
 
-    private void setupAdapter(ArrayList<Article> articles) {
-        articlesAdapter = new ArticlesAdapter(articles, this);
-        searchRecyclerView.setAdapter(articlesAdapter);
+    private Filter loadFilterFromSharedPreference(Context context) {
+        return FilterSettingsStorage.getInstance(context).retrieveFilter();
+    }
+
+    private void setupAdapter(final ArrayList<Article> articles) {
+        final ArticlesAdapter.ArticleItemClickListener listener = this;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                articlesAdapter = new ArticlesAdapter(articles, listener);
+                searchRecyclerView.setAdapter(articlesAdapter);
+                articlesAdapter.notifyDataSetChanged();
+                searchRecyclerView.invalidate();
+                searchRecyclerView.requestLayout();
+            }
+        });
     }
 
     private void insertNewPageData(final ArrayList<Article> articles) {
@@ -272,5 +222,12 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
     private void showSettingsDialog() {
         SettingsDialogFragment filterSettings = SettingsDialogFragment.newInstance("Filter options");
         filterSettings.show(getFragmentManager(), FILTER_DIALOG_TAG);
+    }
+
+    private void resetBeforeSearch() {
+        recentSearchQuery = null;
+        scrollListener.resetState();
+        searchRecyclerView.setAdapter(null);
+        articlesAdapter = null;
     }
 }

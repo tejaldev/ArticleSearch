@@ -45,7 +45,7 @@ public class Filter {
     }
 
     public String getFormattedDate() {
-        Date date = new Date(dateInMillis);;
+        Date date = new Date(dateInMillis);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         return simpleDateFormat.format(date);
     }
