@@ -4,14 +4,24 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="@dimen/search_image_padding"
-    android:background="@android:color/white">
+    android:background="@drawable/search_row_border_shape"
+    android:layout_margin="@dimen/search_row_margin">
 
     <TextView
         android:id="@+id/search_result_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="@dimen/settings_dialog_item_text_size"
-        android:textStyle="italic"
+        android:textSize="@dimen/search_result_heading_text_size"
+        android:textStyle="italic|bold"
+        android:textColor="@android:color/black"
+        android:paddingTop="@dimen/search_image_padding" />
+
+    <TextView
+        android:id="@+id/search_result_snippet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/search_result_text_size"
+        android:textStyle="bold"
         android:textColor="@android:color/darker_gray"
         android:paddingTop="@dimen/search_image_padding" />
 

@@ -63,7 +63,7 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         handler = new Handler();
         retrofitArticleAPI = new RetrofitArticleAPI(this);
         searchRecyclerView = (RecyclerView) findViewById(R.id.search_recycler_view);
-        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL);
+        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         searchRecyclerView.setLayoutManager(layoutManager);
 
         scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {

@@ -98,12 +98,14 @@ public class ArticlesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             default:
                 TextOnlyViewHolder textOnlyViewHolder = (TextOnlyViewHolder) holder;
                 textOnlyViewHolder.articleTitleText.setText(articleList.get(position).headline);
+                textOnlyViewHolder.articleSnippetText.setText(articleList.get(position).snippet);
                 break;
         }
     }
 
     public class ImageArticleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView articleTitleText;
+        public TextView articleSnippetText;
         public ImageView articleImageView;
 
         public ImageArticleViewHolder(View rootView) {
@@ -111,6 +113,7 @@ public class ArticlesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
             rootView.setOnClickListener(this);
             articleTitleText = (TextView) rootView.findViewById(R.id.search_result_title);
+            articleSnippetText = (TextView) rootView.findViewById(R.id.search_result_snippet);
             articleImageView = (ImageView) rootView.findViewById(R.id.search_result_image);
         }
 
@@ -122,12 +125,14 @@ public class ArticlesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     public class TextOnlyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView articleTitleText;
+        public TextView articleSnippetText;
 
         public TextOnlyViewHolder(View rootView) {
             super(rootView);
 
             rootView.setOnClickListener(this);
             articleTitleText = (TextView) rootView.findViewById(R.id.search_result_title);
+            articleSnippetText = (TextView) rootView.findViewById(R.id.search_result_snippet);
         }
 
         @Override
@@ -158,5 +163,6 @@ public class ArticlesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
 
         holder.articleTitleText.setText(article.headline);
+        holder.articleSnippetText.setText(article.snippet);
     }
 }
