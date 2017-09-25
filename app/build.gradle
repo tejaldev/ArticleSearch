@@ -6,6 +6,10 @@ android {
 
     defaultConfig {
         applicationId "com.ny.search.article"
+        // http://guides.codepath.com/android/Chrome-Custom-Tabs#setup
+        // Chrome Custom Tabs library only works on API 16 (Jelly Bean) an above. If you are supporting previous API,
+        // you can add <uses-sdk tools:overrideLibrary="android.support.customtabs"/> to your manifest to force its
+        // use and check the API version at runtime and just use Chrome Custom tabs if its >= 16
         minSdkVersion 16
         targetSdkVersion 25
         versionCode 1
@@ -24,10 +28,19 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:design:25.3.1'
+
+    // for okhttp - not used just for reference
     compile 'com.squareup.okhttp3:okhttp:3.9.0'
+
+    // for photo download
     compile 'com.github.bumptech.glide:glide:3.8.0'
+
+    // for retrofit2
     compile 'com.google.code.gson:gson:2.7'
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+
+    // for chrome custom tabs
+    compile 'com.android.support:customtabs:25.2.0'
 
 }

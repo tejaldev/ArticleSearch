@@ -9,9 +9,10 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 
 import com.ny.search.article.R;
-import com.ny.search.article.browser.ContentWebViewClient;
 
 /**
+ * Not using this class, replaced with Chrome Custom Tabs to share Url, keeping it around just for reference
+ *
  * @author tejalpar
  */
 public class ContentWebViewFragment extends Fragment {
@@ -34,4 +35,18 @@ public class ContentWebViewFragment extends Fragment {
         contentWebView.loadUrl(pageUrl);
         return rootView;
     }
+
+    /**
+     * Load this fragment from Search Activity using below code to use WebViewClient for opening web urls
+     */
+//        Bundle bundle = new Bundle();
+//        bundle.putString("pageUrl", selectedArticle.webUrl);
+//        ContentWebViewFragment fragment = new ContentWebViewFragment();
+//        fragment.setArguments(bundle);
+//
+//        FragmentManager manager = getSupportFragmentManager();
+//        FragmentTransaction transaction = manager.beginTransaction();
+//        transaction.add(R.id.frameLayout, fragment);
+//        transaction.addToBackStack(null);
+//        transaction.commit();
 }

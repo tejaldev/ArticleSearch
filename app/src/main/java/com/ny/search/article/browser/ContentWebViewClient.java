@@ -7,6 +7,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 /**
+ * Not using this class, replaced with Chrome Custom Tabs to share Url, keeping it around just for reference
+ *
  * @author tejalpar
  */
 public class ContentWebViewClient extends WebViewClient {

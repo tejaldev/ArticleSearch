@@ -1,10 +1,15 @@
 package com.ny.search.article;
 
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import android.support.customtabs.CustomTabsIntent;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -19,12 +24,11 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.ny.search.article.adapters.ArticlesAdapter;
-import com.ny.search.article.browser.ContentWebViewFragment;
 import com.ny.search.article.listeners.EndlessRecyclerViewScrollListener;
 import com.ny.search.article.models.Article;
 import com.ny.search.article.models.Filter;
-import com.ny.search.article.network.response.models.Response;
 import com.ny.search.article.network.RetrofitArticleAPI;
+import com.ny.search.article.network.response.models.Response;
 import com.ny.search.article.settings.SettingsDialogFragment;
 import com.ny.search.article.storage.FilterSettingsStorage;
 import com.ny.search.article.utils.ArticleResponseParser;
@@ -36,9 +40,13 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
     public static String TAG = SearchActivity.class.getSimpleName();
     public static String FILTER_DIALOG_TAG = "FILTER_DIALOG";
 
+    private static final int SHARE_INTENT_REQUEST_CODE = 100;
+
     private Handler handler;
-    private RetrofitArticleAPI retrofitArticleAPI;
     private String recentSearchQuery;
+    private RetrofitArticleAPI retrofitArticleAPI;
+
+    private Bitmap chromeShareItemBitmap;
     private RecyclerView searchRecyclerView;
     private ArticlesAdapter articlesAdapter;
     private EndlessRecyclerViewScrollListener scrollListener;
@@ -115,16 +123,36 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
 
     @Override
     public void onArticleItemClickListener(View view, Article selectedArticle) {
-        Bundle bundle = new Bundle();
-        bundle.putString("pageUrl", selectedArticle.webUrl);
-        ContentWebViewFragment fragment = new ContentWebViewFragment();
-        fragment.setArguments(bundle);
+        // Chrome Custom tabs
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
 
-        FragmentManager manager = getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        transaction.add(R.id.frameLayout, fragment);
-        transaction.addToBackStack(null);
-        transaction.commit();
+        // customize browser look
+        // 1. set toolbar color use ContextCompact to access context info/res in browser
+        builder.setToolbarColor(ContextCompat.getColor(this, R.color.titleToolbarColor));
+
+        // 2. add share button link
+        builder.addDefaultShareMenuItem();
+        // chrome tab doesn't support vector drawables
+        if (chromeShareItemBitmap == null) {
+            BitmapFactory.decodeResource(getResources(), R.drawable.ic_share_menu);
+        }
+
+        // 2.1 create an intent to share the webUrl link
+        Intent shareUrlIntent = new Intent(Intent.ACTION_SEND);
+        shareUrlIntent.setType("text/plain");
+        shareUrlIntent.putExtra(Intent.EXTRA_TEXT, selectedArticle.webUrl);
+
+        // 2.2 create pending intent to invoke {shareUrlIntent} on share menu item click
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,
+                SHARE_INTENT_REQUEST_CODE,
+                shareUrlIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+
+        builder.setActionButton(chromeShareItemBitmap, "Share Link", pendingIntent, true);
+
+        // Build customTabsIntent & Launch web url
+        CustomTabsIntent customTabsIntent = builder.build();
+        customTabsIntent.launchUrl(this, Uri.parse(selectedArticle.webUrl));
     }
 
     @Override
