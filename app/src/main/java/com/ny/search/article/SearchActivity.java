@@ -134,7 +134,7 @@ public class SearchActivity extends AppCompatActivity implements ArticlesAdapter
         builder.addDefaultShareMenuItem();
         // chrome tab doesn't support vector drawables
         if (chromeShareItemBitmap == null) {
-            BitmapFactory.decodeResource(getResources(), R.drawable.ic_share_menu);
+            chromeShareItemBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_share_menu);
         }
 
         // 2.1 create an intent to share the webUrl link

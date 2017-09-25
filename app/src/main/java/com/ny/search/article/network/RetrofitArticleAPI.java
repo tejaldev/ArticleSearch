@@ -84,18 +84,19 @@ public class RetrofitArticleAPI {
     private Call<Response> buildServiceCall(Filter queryParams, String query, int page) {
 
         //3. call api method from interface
-        Call<Response> serviceCall = searchService.getResponse(
-                queryParams.getFormattedDate(),
-                queryParams.getSortOrder(),
+        return searchService.getResponse(
+                (queryParams.getFormattedDate().equals("0")) ? null: queryParams.getFormattedDate(),
+                (queryParams.getSortOrder().equals("")) ? null: queryParams.getSortOrder(),
                 buildNewsDeskQueryParam(queryParams.getNewsDeskMap()),
                 query,
                 page,
                 SearchService.API_KEY);
-
-        return serviceCall;
     }
 
     private String buildNewsDeskQueryParam(HashMap<String, Boolean> params) {
+        if (params == null) {
+            return null;
+        }
         StringBuilder stringBuilder = new StringBuilder("news_desk:(");
         for (Map.Entry<String, Boolean> e: params.entrySet()) {
             if (e.getValue()) {
