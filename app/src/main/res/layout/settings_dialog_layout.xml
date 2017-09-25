@@ -38,9 +38,18 @@
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/add_date_button"
+            android:id="@+id/clear_date_button"
+            android:layout_gravity="center_vertical"
             android:background="@null"
-            android:src="@mipmap/ic_pick_date" />
+            android:src="@drawable/ic_clear_field" />
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/add_date_button"
+            android:layout_gravity="center_vertical"
+            android:background="@null"
+            android:src="@drawable/ic_select_date" />
 
     </LinearLayout>
 
@@ -54,14 +63,28 @@
         android:textColor="@color/settingsLabelColor"
         android:paddingTop="@dimen/search_image_padding" />
 
-    <Spinner
-        android:id="@+id/sort_order_spinner"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:prompt="@string/sort_order_prompt"
-        android:textSize="@dimen/settings_dialog_text_size"
-        android:fontFamily="sans-serif"
-        android:textStyle="bold"/>
+        android:orientation="horizontal">
+        <Spinner
+            android:id="@+id/sort_order_spinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:prompt="@string/sort_order_prompt"
+            android:textSize="@dimen/settings_dialog_text_size"
+            android:fontFamily="sans-serif"
+            android:textStyle="bold"/>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/clear_sort_button"
+            android:visibility="gone"
+            android:background="@null"
+            android:src="@drawable/ic_clear_field" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/news_desk_label"
@@ -82,7 +105,7 @@
         android:textColor="@color/settingsLabelColor"
         android:fontFamily="sans-serif"
         android:layout_gravity="center_vertical"
-        android:textAlignment="center"
+        android:gravity="top"
         android:text="@string/arts_news_desk_checkbox"
         android:paddingTop="@dimen/search_image_padding"/>
     <CheckBox
@@ -93,7 +116,7 @@
         android:textStyle="bold"
         android:textColor="@color/settingsLabelColor"
         android:fontFamily="sans-serif"
-        android:textAlignment="center"
+        android:gravity="top"
         android:text="@string/fashion_news_desk_checkbox"
         android:paddingTop="@dimen/search_image_padding"/>
     <CheckBox
@@ -104,7 +127,7 @@
         android:textStyle="bold"
         android:textColor="@color/settingsLabelColor"
         android:fontFamily="sans-serif"
-        android:textAlignment="center"
+        android:gravity="top"
         android:text="@string/sports_news_desk_checkbox"
         android:paddingTop="@dimen/search_image_padding"/>
 
@@ -120,7 +143,7 @@
             android:layout_height="wrap_content"
             android:text="@string/cancel_button_text"
             android:textColor="@android:color/white"
-            android:background="@color/colorAccent"
+            android:background="@drawable/button_shape"
             android:layout_alignParentStart="true"
             android:textSize="@dimen/settings_dialog_item_text_size" />
 
@@ -131,7 +154,7 @@
             android:layout_alignParentEnd="true"
             android:text="@string/save_button_text"
             android:textColor="@android:color/white"
-            android:background="@color/colorAccent"
+            android:background="@drawable/button_shape"
             android:textSize="@dimen/settings_dialog_item_text_size"
             style="?attr/buttonBarButtonStyle"
             android:padding="@dimen/button_padding"/>

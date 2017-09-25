@@ -37,7 +37,6 @@ public class SettingsDialogFragment extends DialogFragment implements DatePicker
     private int selectedMonth;
     private int selectedDayOfMonth;
     private TextView beginDateTextView;
-    private EditText sortOrderTextView;
     private Spinner sortOrderSpinner;
     private CheckBox artsCheckBox;
     private CheckBox fashionCheckBox;
@@ -62,6 +61,7 @@ public class SettingsDialogFragment extends DialogFragment implements DatePicker
         final Context context = view.getContext();
         final DatePickerDialog datePickerDialog = getDatePickerDialog(view.getContext());
         final ImageButton addDateButton = (ImageButton) view.findViewById(R.id.add_date_button);
+        final ImageButton clearDateButton = (ImageButton) view.findViewById(R.id.clear_date_button);
         beginDateTextView = (TextView) view.findViewById(R.id.begin_date_input_text);
         sortOrderSpinner = (Spinner) view.findViewById(R.id.sort_order_spinner);
         artsCheckBox = (CheckBox) view.findViewById(R.id.arts_news_desk_option);
@@ -98,6 +98,17 @@ public class SettingsDialogFragment extends DialogFragment implements DatePicker
                 dismissDialog();
             }
         });
+
+        clearDateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                beginDateTextView.setText("");
+                selectedYear = -1;
+                selectedMonth = -1;
+                selectedDayOfMonth = -1;
+                isDateSet = false;
+            }
+        });
         return view;
     }
 
@@ -124,7 +135,9 @@ public class SettingsDialogFragment extends DialogFragment implements DatePicker
     private Filter getSelectedFilterSettings() {
         Filter filter = new Filter();
         filter.setDateInMillis(new Date(selectedYear - 1900, selectedMonth, selectedDayOfMonth).getTime());
-        filter.setSortOrder(sortOrderSpinner.getSelectedItem().toString());
+        if (!sortOrderSpinner.getSelectedItem().toString().equals("None")) {
+            filter.setSortOrder(sortOrderSpinner.getSelectedItem().toString());
+        }
 
         HashMap<String, Boolean> newsDeskMap = new HashMap<>();
         newsDeskMap.put(Filter.ARTS_KEY, artsCheckBox.isChecked());
@@ -146,7 +159,9 @@ public class SettingsDialogFragment extends DialogFragment implements DatePicker
             selectedDayOfMonth = selectedDate.getDate();
 
             // sort order
-            setSpinnerSelection(filter.getSortOrder());
+            if (filter.getSortOrder() != null && !filter.getSortOrder().isEmpty()) {
+                setSpinnerSelection(filter.getSortOrder());
+            }
 
             // news desk
             HashMap<String, Boolean> newsDeskMap = filter.getNewsDeskMap();
